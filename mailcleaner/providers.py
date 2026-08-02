@@ -97,12 +97,18 @@ class GmailProvider:
             raise FileNotFoundError("Le fichier credentials.json Google est introuvable.")
         if self.token_path.exists():
             self._creds = Credentials.from_authorized_user_file(str(self.token_path), GOOGLE_SCOPES)
+        if self._creds and self._creds.expired and self._creds.refresh_token:
+            self._creds.refresh(Request())
         if not self._creds or not self._creds.valid:
-            if self._creds and self._creds.expired and self._creds.refresh_token:
-                self._creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(str(self.credentials_path), GOOGLE_SCOPES)
-                self._creds = flow.run_local_server(port=0, access_type="offline", prompt="consent")
+            flow = InstalledAppFlow.from_client_secrets_file(str(self.credentials_path), GOOGLE_SCOPES)
+            self._creds = flow.run_local_server(
+                port=0,
+                access_type="offline",
+                prompt="consent",
+                authorization_prompt_message="Ouvre le navigateur pour connecter Google.",
+                success_message="Connexion Google terminée. Tu peux fermer cet onglet.",
+                timeout_seconds=120,
+            )
         self.token_path.parent.mkdir(parents=True, exist_ok=True)
         self.token_path.write_text(self._creds.to_json(), encoding="utf-8")
         return "Google connecté"
@@ -194,7 +200,11 @@ class MicrosoftProvider:
         accounts = app.get_accounts()
         result = app.acquire_token_silent(MICROSOFT_SCOPES, account=accounts[0] if accounts else None)
         if not result:
-            result = app.acquire_token_interactive(MICROSOFT_SCOPES, prompt="select_account")
+            result = app.acquire_token_interactive(
+                MICROSOFT_SCOPES,
+                prompt="select_account",
+                login_hint=None,
+            )
         if "access_token" not in result:
             raise RuntimeError(result.get("error_description") or "Échec de l'authentification Microsoft.")
         self._save_cache()

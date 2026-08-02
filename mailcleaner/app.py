@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 import keyring
-from PySide6.QtCore import QObject, Qt, QThread, Signal, QUrl
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
@@ -69,7 +69,7 @@ class MailCleanerApp(QMainWindow):
         self.setObjectName("MainWindow")
         self._build_ui()
         self._refresh_account_views()
-        self.refresh_messages(silent=True)
+        QTimer.singleShot(0, lambda: self.refresh_messages(silent=True))
 
     def _build_ui(self) -> None:
         tabs = QTabWidget()
@@ -594,15 +594,24 @@ class MailCleanerApp(QMainWindow):
         runner.finished.connect(runner.deleteLater)
         runner.start()
 
-    def choose_google_credentials(self) -> None:
+    def choose_google_credentials(self) -> bool:
         path, _ = QFileDialog.getOpenFileName(self, "Choisir credentials.json", "", "JSON (*.json)")
         if path:
             self.google_credentials.setText(path)
             self.state.google_credentials_path = path
             save_state(self.state)
+            return True
+        return False
 
     def connect_google(self) -> None:
         self.state.google_credentials_path = self.google_credentials.text().strip()
+        if not self.state.google_credentials_path:
+            if not self.choose_google_credentials():
+                return
+            self.state.google_credentials_path = self.google_credentials.text().strip()
+        if not Path(self.state.google_credentials_path).exists():
+            QMessageBox.warning(self, APP_NAME, "Le fichier credentials Google est introuvable.")
+            return
         self.state.message_limit = self.limit_spin.value()
         save_state(self.state)
 
@@ -620,6 +629,9 @@ class MailCleanerApp(QMainWindow):
     def connect_microsoft(self) -> None:
         self.state.microsoft_client_id = self.microsoft_client_id.text().strip()
         self.state.microsoft_tenant = self.microsoft_tenant.text().strip() or "common"
+        if not self.state.microsoft_client_id:
+            QMessageBox.warning(self, APP_NAME, "Renseigne l'ID client Microsoft avant de te connecter.")
+            return
         save_state(self.state)
 
         def job() -> str:
