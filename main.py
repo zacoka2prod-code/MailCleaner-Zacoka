@@ -1,7 +1,9 @@
 
 import sys
-from mailcleaner.app import MailCleanerApp
+
 from PySide6.QtWidgets import QApplication
+
+from mailcleaner.app import MailCleanerApp
 
 def main():
     application = QApplication(sys.argv)

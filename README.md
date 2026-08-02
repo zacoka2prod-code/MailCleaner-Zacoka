@@ -1,27 +1,23 @@
-# MailCleaner Zacoka 2 — Windows et macOS
+# MailCleaner Zacoka
 
-Application graphique permettant de connecter Gmail et Outlook via une page de connexion officielle, ainsi qu'OVH par IMAP.
+Application de bureau Windows et macOS pour centraliser les boîtes Gmail, Microsoft et OVH.
 
 ## Ce que fait cette version
 
-- Interface en tableau avec une case à cocher par message.
-- Boutons « Tout cocher » et « Tout décocher ».
-- Filtres par âge, taille, expéditeur et objet.
-- Détection des newsletters, messages non lus et pièces jointes.
-- Aperçu du volume récupérable.
-- Archivage ou déplacement vers la corbeille.
+- Liste des messages avec cases à cocher.
+- Filtres par fournisseur, recherche libre et messages non lus.
+- Connexion Gmail via OAuth installé.
+- Connexion Microsoft via OAuth Microsoft.
+- Connexion OVH via IMAP avec stockage du mot de passe dans le coffre-fort système.
+- Archivage et suppression par lot.
 - Export CSV.
-- Aucun effacement définitif automatique.
-- Gmail : OAuth dans le navigateur.
-- Outlook / Hotmail / Microsoft 365 : OAuth Microsoft.
-- OVH : mot de passe stocké dans le coffre-fort du système.
-- Compatible Windows et macOS.
+- Build Windows `.exe` et macOS `.dmg`.
 
 ## Important : pourquoi faut-il configurer OAuth ?
 
 Google et Microsoft n'autorisent pas une application inconnue à lire une boîte mail. Il faut donc créer gratuitement une identité d'application. Cette opération ne se fait qu'une fois.
 
-Le programme contient un menu **Configuration > Paramètres OAuth** permettant d'importer les identifiants.
+Le programme contient un onglet **Comptes** pour importer les identifiants et enregistrer les comptes OVH.
 
 ## Configuration Google
 
@@ -88,7 +84,7 @@ Double-cliquez sur `build_windows.bat`.
 
 Résultat :
 
-`dist\MailCleaner_Zacoka.exe`
+`release\MailCleaner_Zacoka_Setup_Windows.exe`
 
 ### macOS
 
@@ -101,9 +97,18 @@ chmod +x build_macos.command
 
 Résultat :
 
-`dist/MailCleaner Zacoka.app`
+`release/MailCleaner_Zacoka_macOS.dmg`
 
 Une application macOS doit être construite sur macOS. Un fichier `.app` généré sous Windows n'est pas valable.
+
+## GitHub Actions
+
+Le workflow se trouve dans `.github/workflows/build.yml`.
+
+Il génère automatiquement :
+
+- `MailCleaner_Zacoka_Setup_Windows.exe`
+- `MailCleaner_Zacoka_macOS.dmg`
 
 ## Signature et avertissements
 

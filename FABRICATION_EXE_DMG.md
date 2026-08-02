@@ -10,11 +10,11 @@ Le projet est prêt à fabriquer automatiquement :
 1. Crée un dépôt privé vide sur GitHub.
 2. Dépose tout le contenu de ce dossier dans le dépôt.
 3. Ouvre l'onglet **Actions**.
-4. Sélectionne **Build MailCleaner Windows and macOS**.
+4. Sélectionne **Build MailCleaner Zacoka**.
 5. Clique sur **Run workflow**.
 6. Quand la fabrication est terminée, télécharge les deux fichiers dans **Artifacts** :
-   - `MailCleaner-Windows-EXE`
-   - `MailCleaner-macOS-DMG`
+   - `MailCleaner_Zacoka_Setup_Windows`
+   - `MailCleaner_Zacoka_macOS`
 
 Aucune installation de Python n'est nécessaire sur les ordinateurs qui utiliseront les installateurs.
 

@@ -1,0 +1,2 @@
+"""MailCleaner Zacoka desktop application."""
+

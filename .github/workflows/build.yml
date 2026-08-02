@@ -1,50 +1,60 @@
-
-name: Build MailCleaner Windows and macOS
+name: Build MailCleaner Zacoka
 
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Build Windows application
-        run: pyinstaller --noconfirm --clean "MailCleaner_Zacoka.spec"
+
+      - name: Build application
+        run: py -m PyInstaller --noconfirm --clean "MailCleaner_Zacoka.spec"
+
       - name: Install Inno Setup
         run: choco install innosetup -y
-      - name: Create Windows installer
+
+      - name: Build Windows setup
+        shell: pwsh
         run: |
-          mkdir release -Force
+          New-Item -ItemType Directory -Force -Path release | Out-Null
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\windows_installer.iss"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: MailCleaner-Windows-EXE
+          name: MailCleaner_Zacoka_Setup_Windows
           path: release/MailCleaner_Zacoka_Setup_Windows.exe
 
   macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Build macOS application
-        run: pyinstaller --noconfirm --clean "MailCleaner_Zacoka.spec"
-      - name: Create DMG
+
+      - name: Build application
+        run: python -m PyInstaller --noconfirm --clean "MailCleaner_Zacoka.spec"
+
+      - name: Build DMG
         run: |
           mkdir -p release/dmg
           cp -R "dist/MailCleaner Zacoka.app" release/dmg/
@@ -54,7 +64,9 @@ jobs:
             -srcfolder release/dmg \
             -ov -format UDZO \
             "release/MailCleaner_Zacoka_macOS.dmg"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: MailCleaner-macOS-DMG
+          name: MailCleaner_Zacoka_macOS
           path: release/MailCleaner_Zacoka_macOS.dmg
+

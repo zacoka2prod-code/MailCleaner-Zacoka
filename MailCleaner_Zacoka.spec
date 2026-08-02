@@ -1,6 +1,12 @@
 
 # -*- mode: python ; coding: utf-8 -*-
+from pathlib import Path
+import sys
+
+from PyInstaller.building.build_main import Analysis, COLLECT, EXE, PYZ
 from PyInstaller.utils.hooks import collect_all
+
+ROOT = Path(SPECPATH).resolve()
 
 datas, binaries, hiddenimports = [], [], []
 for package in ("msal", "googleapiclient", "google_auth_oauthlib", "keyring", "PySide6"):
@@ -9,9 +15,11 @@ for package in ("msal", "googleapiclient", "google_auth_oauthlib", "keyring", "P
     binaries += b
     hiddenimports += h
 
+datas += [(str(ROOT / "README.md"), ".")]
+
 a = Analysis(
     ["main.py"],
-    pathex=[],
+    pathex=[str(ROOT)],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
@@ -27,7 +35,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="MailCleaner Zacoka",
+    name="MailCleaner_Zacoka",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -41,12 +49,15 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name="MailCleaner Zacoka",
+    name="MailCleaner_Zacoka",
 )
 
-app = BUNDLE(
-    coll,
-    name="MailCleaner Zacoka.app",
-    icon=None,
-    bundle_identifier="com.zacoka.mailcleaner",
-)
+if sys.platform == "darwin":
+    from PyInstaller.building.api import BUNDLE
+
+    app = BUNDLE(
+        coll,
+        name="MailCleaner Zacoka.app",
+        icon=None,
+        bundle_identifier="com.zacoka.mailcleaner",
+    )
