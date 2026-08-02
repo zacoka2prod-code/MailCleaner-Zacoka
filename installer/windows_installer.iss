@@ -8,7 +8,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-OutputDir=release
+OutputDir=..\release
 OutputBaseFilename=MailCleaner_Zacoka_Setup_Windows
 Compression=lzma2
 SolidCompression=yes
@@ -32,4 +32,3 @@ Name: "desktopicon"; Description: "Créer une icône sur le Bureau"; GroupDescri
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Lancer {#MyAppName}"; Flags: nowait postinstall skipifsilent
-
