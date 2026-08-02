@@ -66,6 +66,7 @@ class MailCleanerApp(QMainWindow):
         self.provider_cache: dict[str, object] = {}
         self.setWindowTitle(APP_NAME)
         self.resize(1480, 900)
+        self.setObjectName("MainWindow")
         self._build_ui()
         self._refresh_account_views()
         self.refresh_messages(silent=True)
@@ -77,6 +78,137 @@ class MailCleanerApp(QMainWindow):
         tabs.addTab(self._build_about_tab(), "À propos")
         self.setCentralWidget(tabs)
         self.statusBar().showMessage("Prêt")
+        self.setStyleSheet(
+            """
+            QMainWindow#MainWindow {
+                background: #17191d;
+                color: #f4f6f8;
+            }
+            QWidget {
+                color: #f4f6f8;
+                font-size: 13px;
+            }
+            QTabWidget::pane {
+                border: 0;
+                background: #17191d;
+            }
+            QTabBar::tab {
+                background: #22262c;
+                color: #cbd5df;
+                padding: 10px 18px;
+                margin-right: 6px;
+                border-top-left-radius: 10px;
+                border-top-right-radius: 10px;
+            }
+            QTabBar::tab:selected {
+                background: #2f343b;
+                color: white;
+            }
+            QGroupBox {
+                background: #22262c;
+                border: 1px solid #3a4048;
+                border-radius: 16px;
+                margin-top: 18px;
+                padding: 16px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 16px;
+                top: 6px;
+                padding: 0 8px;
+                color: #ffffff;
+                font-weight: 700;
+            }
+            QPushButton {
+                background: #3a4048;
+                color: white;
+                border: 1px solid #4a5058;
+                border-radius: 12px;
+                padding: 10px 16px;
+                min-height: 18px;
+            }
+            QPushButton:hover {
+                background: #454b54;
+            }
+            QPushButton:pressed {
+                background: #2e333a;
+            }
+            QPushButton#primaryButton {
+                background: #4f7cff;
+                border-color: #4f7cff;
+                font-weight: 700;
+            }
+            QPushButton#primaryButton:hover {
+                background: #638aff;
+            }
+            QPushButton#googleButton {
+                background: white;
+                color: #1f1f1f;
+                font-weight: 700;
+            }
+            QPushButton#googleButton:hover {
+                background: #f2f2f2;
+            }
+            QPushButton#dangerButton {
+                background: #6f2f34;
+                border-color: #8a4047;
+            }
+            QLineEdit, QComboBox, QSpinBox, QTextEdit, QTableWidget {
+                background: #1f2329;
+                color: #f4f6f8;
+                border: 1px solid #3a4048;
+                border-radius: 10px;
+                padding: 8px 10px;
+                selection-background-color: #4f7cff;
+            }
+            QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QTextEdit:focus {
+                border: 1px solid #4f7cff;
+            }
+            QTableWidget {
+                gridline-color: #323842;
+            }
+            QHeaderView::section {
+                background: #272b31;
+                color: #d9e1ea;
+                border: 0;
+                padding: 8px 10px;
+                font-weight: 600;
+            }
+            QStatusBar {
+                background: #17191d;
+                color: #cbd5df;
+            }
+            QLabel#heroTitle {
+                font-size: 26px;
+                font-weight: 800;
+                color: white;
+            }
+            QLabel#heroSubtitle {
+                color: #b0bac6;
+                font-size: 13px;
+            }
+            QLabel#sectionLabel {
+                color: #b0bac6;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                font-size: 10px;
+                font-weight: 700;
+            }
+            QLabel#statusPill {
+                background: #1f2329;
+                border: 1px solid #3a4048;
+                border-radius: 999px;
+                padding: 6px 12px;
+                color: #b0bac6;
+                font-weight: 700;
+            }
+            QLabel#statusPill[connected="true"] {
+                color: #9bffba;
+                border-color: #2a5c3d;
+                background: #183024;
+            }
+            """
+        )
 
     def _build_inbox_tab(self) -> QWidget:
         tab = QWidget()
@@ -149,44 +281,119 @@ class MailCleanerApp(QMainWindow):
     def _build_accounts_tab(self) -> QWidget:
         tab = QWidget()
         layout = QVBoxLayout(tab)
+        layout.setSpacing(18)
 
-        grid = QGridLayout()
-        layout.addLayout(grid)
+        hero = QWidget()
+        hero_layout = QVBoxLayout(hero)
+        hero_layout.setContentsMargins(0, 0, 0, 0)
+        title = QLabel("Connexions")
+        title.setObjectName("heroTitle")
+        subtitle = QLabel(
+            "Connecte Gmail, Microsoft et OVH avec une zone de connexion claire, "
+            "puis garde les identifiants en local de façon sécurisée."
+        )
+        subtitle.setObjectName("heroSubtitle")
+        hero_layout.addWidget(title)
+        hero_layout.addWidget(subtitle)
+        layout.addWidget(hero)
 
-        google_box = QGroupBox("Google OAuth")
-        google_form = QFormLayout(google_box)
+        cards = QGridLayout()
+        cards.setHorizontalSpacing(16)
+        cards.setVerticalSpacing(16)
+        layout.addLayout(cards)
+
+        google_box = self._build_google_card()
+        microsoft_box = self._build_microsoft_card()
+        cards.addWidget(google_box, 0, 0)
+        cards.addWidget(microsoft_box, 0, 1)
+
+        ovh_box = self._build_ovh_card()
+        layout.addWidget(ovh_box)
+
+        accounts_box = QGroupBox("Comptes OVH enregistrés")
+        accounts_layout = QVBoxLayout(accounts_box)
+        self.ovh_list = QListWidget()
+        self.ovh_list.setMinimumHeight(180)
+        remove_ovh = QPushButton("Supprimer le compte sélectionné")
+        remove_ovh.setObjectName("dangerButton")
+        remove_ovh.clicked.connect(self.remove_selected_ovh)
+        accounts_layout.addWidget(self.ovh_list)
+        accounts_layout.addWidget(remove_ovh)
+        layout.addWidget(accounts_box)
+        layout.addStretch(1)
+        return tab
+
+    def _status_pill(self, text: str) -> QLabel:
+        pill = QLabel(text)
+        pill.setObjectName("statusPill")
+        pill.setProperty("connected", False)
+        return pill
+
+    def _build_google_card(self) -> QGroupBox:
+        box = QGroupBox("Google OAuth")
+        form = QVBoxLayout(box)
+        form.setSpacing(12)
+
+        header = QLabel("Connexion Google")
+        header.setObjectName("sectionLabel")
+        form.addWidget(header)
+
         self.google_credentials = QLineEdit(self.state.google_credentials_path)
+        self.google_credentials.setPlaceholderText("credentials.json")
         browse_google = QPushButton("Choisir le JSON")
         browse_google.clicked.connect(self.choose_google_credentials)
         google_path_row = QHBoxLayout()
-        google_path_row.addWidget(self.google_credentials)
+        google_path_row.setContentsMargins(0, 0, 0, 0)
+        google_path_row.addWidget(self.google_credentials, 1)
         google_path_row.addWidget(browse_google)
-        google_widget = QWidget()
-        google_widget.setLayout(google_path_row)
-        self.google_connect = QPushButton("Connexion Google")
+        form.addLayout(google_path_row)
+
+        self.google_connect = QPushButton("Continuer avec Google")
+        self.google_connect.setObjectName("googleButton")
         self.google_connect.clicked.connect(self.connect_google)
-        self.google_status = QLabel("Non connecté")
-        google_form.addRow("Fichier credentials", google_widget)
-        google_form.addRow(self.google_connect)
-        google_form.addRow("État", self.google_status)
-        grid.addWidget(google_box, 0, 0)
+        form.addWidget(self.google_connect)
 
-        microsoft_box = QGroupBox("Microsoft OAuth")
-        microsoft_form = QFormLayout(microsoft_box)
+        self.google_status = self._status_pill("Non connecté")
+        form.addWidget(self.google_status)
+        return box
+
+    def _build_microsoft_card(self) -> QGroupBox:
+        box = QGroupBox("Microsoft OAuth")
+        form = QVBoxLayout(box)
+        form.setSpacing(12)
+
+        header = QLabel("Connexion Microsoft")
+        header.setObjectName("sectionLabel")
+        form.addWidget(header)
+
         self.microsoft_client_id = QLineEdit(self.state.microsoft_client_id)
+        self.microsoft_client_id.setPlaceholderText("ID client")
         self.microsoft_tenant = QLineEdit(self.state.microsoft_tenant)
-        self.microsoft_connect = QPushButton("Connexion Microsoft")
-        self.microsoft_connect.clicked.connect(self.connect_microsoft)
-        self.microsoft_status = QLabel("Non connecté")
-        microsoft_form.addRow("ID client", self.microsoft_client_id)
-        microsoft_form.addRow("Tenant", self.microsoft_tenant)
-        microsoft_form.addRow(self.microsoft_connect)
-        microsoft_form.addRow("État", self.microsoft_status)
-        grid.addWidget(microsoft_box, 0, 1)
+        self.microsoft_tenant.setPlaceholderText("common")
 
-        ovh_box = QGroupBox("OVH IMAP")
-        ovh_form = QFormLayout(ovh_box)
+        form.addWidget(self.microsoft_client_id)
+        form.addWidget(self.microsoft_tenant)
+
+        self.microsoft_connect = QPushButton("Continuer avec Microsoft")
+        self.microsoft_connect.setObjectName("primaryButton")
+        self.microsoft_connect.clicked.connect(self.connect_microsoft)
+        form.addWidget(self.microsoft_connect)
+
+        self.microsoft_status = self._status_pill("Non connecté")
+        form.addWidget(self.microsoft_status)
+        return box
+
+    def _build_ovh_card(self) -> QGroupBox:
+        box = QGroupBox("OVH IMAP")
+        form = QVBoxLayout(box)
+        form.setSpacing(12)
+
+        header = QLabel("Connexion OVH")
+        header.setObjectName("sectionLabel")
+        form.addWidget(header)
+
         self.ovh_email = QLineEdit()
+        self.ovh_email.setPlaceholderText("Adresse e-mail")
         self.ovh_server = QComboBox()
         self.ovh_server.setEditable(True)
         self.ovh_server.addItems(["ssl0.ovh.net", "imap.mail.ovh.net"])
@@ -195,34 +402,26 @@ class MailCleanerApp(QMainWindow):
         self.ovh_port.setValue(993)
         self.ovh_password = QLineEdit()
         self.ovh_password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.ovh_password.setPlaceholderText("Mot de passe")
         self.ovh_label = QLineEdit()
+        self.ovh_label.setPlaceholderText("Libellé")
+
+        form.addWidget(self.ovh_email)
+        form.addWidget(self.ovh_server)
+        form.addWidget(self.ovh_port)
+        form.addWidget(self.ovh_password)
+        form.addWidget(self.ovh_label)
+
+        buttons = QHBoxLayout()
         add_ovh = QPushButton("Ajouter / mettre à jour")
+        add_ovh.setObjectName("primaryButton")
         add_ovh.clicked.connect(self.save_ovh_account)
         test_ovh = QPushButton("Tester OVH")
         test_ovh.clicked.connect(self.test_ovh_account)
-        buttons = QHBoxLayout()
         buttons.addWidget(add_ovh)
         buttons.addWidget(test_ovh)
-        buttons_widget = QWidget()
-        buttons_widget.setLayout(buttons)
-        ovh_form.addRow("Adresse e-mail", self.ovh_email)
-        ovh_form.addRow("Serveur", self.ovh_server)
-        ovh_form.addRow("Port", self.ovh_port)
-        ovh_form.addRow("Mot de passe", self.ovh_password)
-        ovh_form.addRow("Libellé", self.ovh_label)
-        ovh_form.addRow(buttons_widget)
-        grid.addWidget(ovh_box, 1, 0, 1, 2)
-
-        accounts_box = QGroupBox("Comptes OVH enregistrés")
-        accounts_layout = QVBoxLayout(accounts_box)
-        self.ovh_list = QListWidget()
-        remove_ovh = QPushButton("Supprimer le compte sélectionné")
-        remove_ovh.clicked.connect(self.remove_selected_ovh)
-        accounts_layout.addWidget(self.ovh_list)
-        accounts_layout.addWidget(remove_ovh)
-        layout.addWidget(accounts_box)
-        layout.addStretch(1)
-        return tab
+        form.addLayout(buttons)
+        return box
 
     def _build_about_tab(self) -> QWidget:
         tab = QWidget()
@@ -287,6 +486,8 @@ class MailCleanerApp(QMainWindow):
             item = QListWidgetItem(f"{label}  •  {account.server}:{account.port}")
             item.setData(Qt.ItemDataRole.UserRole, account.email)
             self.ovh_list.addItem(item)
+        self._set_connected(self.google_status, bool(self.state.google_credentials_path), "Prêt pour Google" if self.state.google_credentials_path else "Non connecté")
+        self._set_connected(self.microsoft_status, bool(self.state.microsoft_client_id), "Prêt pour Microsoft" if self.state.microsoft_client_id else "Non connecté")
 
     def run_job(self, job: Callable[[], object], on_success: Callable[[object], None], message: str) -> None:
         self.statusBar().showMessage(message)
@@ -561,7 +762,15 @@ class MailCleanerApp(QMainWindow):
 
     def _set_status(self, label: QLabel, text: str) -> None:
         label.setText(text)
+        self._set_connected(label, "connecté" in text.lower() or "prêt" in text.lower(), text)
         self.statusBar().showMessage(text, 5000)
+
+    def _set_connected(self, label: QLabel, connected: bool, text: str) -> None:
+        label.setProperty("connected", connected)
+        label.setText(text)
+        label.style().unpolish(label)
+        label.style().polish(label)
+        label.update()
 
 
 def create_application() -> QApplication:
