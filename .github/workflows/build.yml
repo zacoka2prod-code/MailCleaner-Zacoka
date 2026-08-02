@@ -21,7 +21,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build application
-        run: py -m PyInstaller --noconfirm --clean "MailCleaner_Zacoka.spec"
+        run: python -m PyInstaller --noconfirm --clean "MailCleaner_Zacoka.spec"
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -69,4 +69,3 @@ jobs:
         with:
           name: MailCleaner_Zacoka_macOS
           path: release/MailCleaner_Zacoka_macOS.dmg
-
