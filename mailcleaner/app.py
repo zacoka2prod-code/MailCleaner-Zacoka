@@ -226,6 +226,17 @@ class MailCleanerApp(QMainWindow):
                 font-size: 26px;
                 font-weight: 900;
             }
+            QLabel#microsoftGlyph {
+                color: white;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #f25022, stop:1 #7fba00);
+                border-radius: 14px;
+                min-width: 44px;
+                min-height: 44px;
+                max-width: 44px;
+                max-height: 44px;
+                font-size: 24px;
+                font-weight: 900;
+            }
             QLabel#sectionLabel {
                 color: #b0bac6;
                 text-transform: uppercase;
@@ -444,14 +455,31 @@ class MailCleanerApp(QMainWindow):
     def _build_microsoft_card(self) -> QGroupBox:
         box = QGroupBox("Microsoft OAuth")
         form = QVBoxLayout(box)
-        form.setSpacing(12)
+        form.setSpacing(14)
 
         header = QLabel("Connexion Microsoft")
         header.setObjectName("sectionLabel")
         form.addWidget(header)
 
+        quick_row = QHBoxLayout()
+        quick_row.setContentsMargins(0, 0, 0, 0)
+        microsoft_mark = QLabel("M")
+        microsoft_mark.setObjectName("microsoftGlyph")
+        microsoft_mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        quick_text = QVBoxLayout()
+        quick_title = QLabel("Continuer avec Microsoft")
+        quick_title.setObjectName("bannerTitle")
+        quick_subtitle = QLabel("Authentification via le navigateur avec MSAL.")
+        quick_subtitle.setObjectName("bannerSubtitle")
+        quick_subtitle.setWordWrap(True)
+        quick_text.addWidget(quick_title)
+        quick_text.addWidget(quick_subtitle)
+        quick_row.addWidget(microsoft_mark)
+        quick_row.addLayout(quick_text, 1)
+        form.addLayout(quick_row)
+
         self.microsoft_client_id = QLineEdit(self.state.microsoft_client_id)
-        self.microsoft_client_id.setPlaceholderText("ID client")
+        self.microsoft_client_id.setPlaceholderText("ID client Azure / Microsoft")
         self.microsoft_tenant = QLineEdit(self.state.microsoft_tenant)
         self.microsoft_tenant.setPlaceholderText("common")
 
@@ -462,6 +490,11 @@ class MailCleanerApp(QMainWindow):
         self.microsoft_connect.setObjectName("primaryButton")
         self.microsoft_connect.clicked.connect(self.connect_microsoft)
         form.addWidget(self.microsoft_connect)
+
+        helper = QLabel("Astuce: laisse le tenant sur common si tu veux te connecter avec un compte perso.")
+        helper.setWordWrap(True)
+        helper.setStyleSheet("color: #b0bac6; font-size: 12px;")
+        form.addWidget(helper)
 
         self.microsoft_status = self._status_pill("Non connecté")
         form.addWidget(self.microsoft_status)
