@@ -145,9 +145,23 @@ class MailCleanerApp(QMainWindow):
                 background: white;
                 color: #1f1f1f;
                 font-weight: 700;
+                min-height: 42px;
+                font-size: 15px;
+                border-radius: 999px;
             }
             QPushButton#googleButton:hover {
                 background: #f2f2f2;
+            }
+            QPushButton#emailButton {
+                background: transparent;
+                color: #f4f6f8;
+                border: 1px solid #5a6470;
+                min-height: 42px;
+                font-size: 14px;
+                border-radius: 999px;
+            }
+            QPushButton#emailButton:hover {
+                background: #2a2f36;
             }
             QPushButton#dangerButton {
                 background: #6f2f34;
@@ -186,6 +200,31 @@ class MailCleanerApp(QMainWindow):
             QLabel#heroSubtitle {
                 color: #b0bac6;
                 font-size: 13px;
+            }
+            QFrame#connectionBanner {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2d67f8, stop:1 #6a8cff);
+                border-radius: 20px;
+                padding: 22px;
+            }
+            QLabel#bannerTitle {
+                color: white;
+                font-size: 20px;
+                font-weight: 800;
+            }
+            QLabel#bannerSubtitle {
+                color: rgba(255, 255, 255, 0.88);
+                font-size: 13px;
+            }
+            QLabel#googleGlyph {
+                color: #4285f4;
+                background: white;
+                border-radius: 999px;
+                min-width: 44px;
+                min-height: 44px;
+                max-width: 44px;
+                max-height: 44px;
+                font-size: 26px;
+                font-weight: 900;
             }
             QLabel#sectionLabel {
                 color: #b0bac6;
@@ -297,6 +336,29 @@ class MailCleanerApp(QMainWindow):
         hero_layout.addWidget(subtitle)
         layout.addWidget(hero)
 
+        banner = QFrame()
+        banner.setObjectName("connectionBanner")
+        banner_layout = QHBoxLayout(banner)
+        banner_layout.setContentsMargins(18, 18, 18, 18)
+        banner_layout.setSpacing(16)
+        google_mark = QLabel("G")
+        google_mark.setObjectName("googleGlyph")
+        google_mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        banner_text = QVBoxLayout()
+        banner_title = QLabel("Se connecter à tes boîtes")
+        banner_title.setObjectName("bannerTitle")
+        banner_subtitle = QLabel(
+            "Google, Microsoft et OVH apparaissent dans un panneau unique, "
+            "avec une expérience simple et rapide."
+        )
+        banner_subtitle.setObjectName("bannerSubtitle")
+        banner_subtitle.setWordWrap(True)
+        banner_text.addWidget(banner_title)
+        banner_text.addWidget(banner_subtitle)
+        banner_layout.addWidget(google_mark)
+        banner_layout.addLayout(banner_text, 1)
+        layout.addWidget(banner)
+
         cards = QGridLayout()
         cards.setHorizontalSpacing(16)
         cards.setVerticalSpacing(16)
@@ -332,11 +394,28 @@ class MailCleanerApp(QMainWindow):
     def _build_google_card(self) -> QGroupBox:
         box = QGroupBox("Google OAuth")
         form = QVBoxLayout(box)
-        form.setSpacing(12)
+        form.setSpacing(14)
 
         header = QLabel("Connexion Google")
         header.setObjectName("sectionLabel")
         form.addWidget(header)
+
+        quick_row = QHBoxLayout()
+        quick_row.setContentsMargins(0, 0, 0, 0)
+        google_mark = QLabel("G")
+        google_mark.setObjectName("googleGlyph")
+        google_mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        quick_text = QVBoxLayout()
+        quick_title = QLabel("Continuer avec Google")
+        quick_title.setObjectName("bannerTitle")
+        quick_subtitle = QLabel("Authentification sécurisée via le navigateur.")
+        quick_subtitle.setObjectName("bannerSubtitle")
+        quick_subtitle.setWordWrap(True)
+        quick_text.addWidget(quick_title)
+        quick_text.addWidget(quick_subtitle)
+        quick_row.addWidget(google_mark)
+        quick_row.addLayout(quick_text, 1)
+        form.addLayout(quick_row)
 
         self.google_credentials = QLineEdit(self.state.google_credentials_path)
         self.google_credentials.setPlaceholderText("credentials.json")
@@ -352,6 +431,11 @@ class MailCleanerApp(QMainWindow):
         self.google_connect.setObjectName("googleButton")
         self.google_connect.clicked.connect(self.connect_google)
         form.addWidget(self.google_connect)
+
+        email_button = QPushButton("S'identifier avec un e-mail")
+        email_button.setObjectName("emailButton")
+        email_button.clicked.connect(self.choose_google_credentials)
+        form.addWidget(email_button)
 
         self.google_status = self._status_pill("Non connecté")
         form.addWidget(self.google_status)
