@@ -57,7 +57,13 @@ jobs:
       - name: Build DMG
         run: |
           mkdir -p release/dmg
-          cp -R "dist/MailCleaner Zacoka.app" release/dmg/
+          APP_PATH="$(find dist -maxdepth 1 -name '*.app' -print -quit)"
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app bundle found in dist/"
+            find dist -maxdepth 2 -print
+            exit 1
+          fi
+          ditto "$APP_PATH" "release/dmg/$(basename "$APP_PATH")"
           ln -s /Applications release/dmg/Applications
           hdiutil create \
             -volname "MailCleaner Zacoka" \
