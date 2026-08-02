@@ -53,7 +53,7 @@ coll = COLLECT(
 )
 
 if sys.platform == "darwin":
-    from PyInstaller.building.api import BUNDLE
+    from PyInstaller.building.osx import BUNDLE
 
     app = BUNDLE(
         coll,
