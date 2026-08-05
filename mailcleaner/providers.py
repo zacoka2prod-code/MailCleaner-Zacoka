@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import email
 import imaplib
 import re
@@ -10,6 +11,7 @@ from email.message import Message
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlparse
 
 import keyring
 import requests
@@ -92,6 +94,43 @@ class GmailProvider:
         self.token_path = Path(token_path)
         self._creds: Credentials | None = None
 
+    def _client_config(self) -> tuple[dict[str, object], str]:
+        payload = json.loads(self.credentials_path.read_text(encoding="utf-8"))
+        if "installed" in payload:
+            return payload["installed"], "installed"
+        if "web" in payload:
+            return payload["web"], "web"
+        raise ValueError(
+            "Le fichier credentials Google est invalide. "
+            "Utilise un client OAuth de type Application de bureau si possible."
+        )
+
+    def _redirect_target(self, client_config: dict[str, object], client_kind: str) -> tuple[str, int]:
+        redirect_uris = [str(uri) for uri in client_config.get("redirect_uris", []) or []]
+        loopback_uris = []
+        for uri in redirect_uris:
+            parsed = urlparse(uri)
+            if parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1"}:
+                if parsed.port:
+                    return parsed.hostname, parsed.port
+                loopback_uris.append(uri)
+
+        if client_kind == "installed":
+            return "localhost", 0
+
+        if loopback_uris:
+            raise ValueError(
+                "Le client OAuth Google est de type Web et sa redirection locale ne contient pas de port. "
+                "Ajoute une URI autorisée comme http://localhost:8080/ dans Google Cloud Console, "
+                "ou recrée le client en type Application de bureau."
+            )
+
+        raise ValueError(
+            "Le client OAuth Google est de type Web sans URI locale de type localhost. "
+            "Recrée le client en Application de bureau, ou ajoute une redirection de type "
+            "http://localhost:8080/ puis réessaie."
+        )
+
     def authenticate(self) -> str:
         if not self.credentials_path.exists():
             raise FileNotFoundError("Le fichier credentials.json Google est introuvable.")
@@ -100,15 +139,28 @@ class GmailProvider:
         if self._creds and self._creds.expired and self._creds.refresh_token:
             self._creds.refresh(Request())
         if not self._creds or not self._creds.valid:
+            client_config, client_kind = self._client_config()
+            host, port = self._redirect_target(client_config, client_kind)
             flow = InstalledAppFlow.from_client_secrets_file(str(self.credentials_path), GOOGLE_SCOPES)
-            self._creds = flow.run_local_server(
-                port=0,
-                access_type="offline",
-                prompt="consent",
-                authorization_prompt_message="Ouvre le navigateur pour connecter Google.",
-                success_message="Connexion Google terminée. Tu peux fermer cet onglet.",
-                timeout_seconds=120,
-            )
+            try:
+                self._creds = flow.run_local_server(
+                    host=host,
+                    port=port,
+                    access_type="offline",
+                    prompt="consent",
+                    authorization_prompt_message="Ouvre le navigateur pour connecter Google.",
+                    success_message="Connexion Google terminée. Tu peux fermer cet onglet.",
+                    timeout_seconds=120,
+                )
+            except Exception as exc:
+                details = str(exc)
+                if "redirect_uri_mismatch" in details or "Error 400" in details:
+                    raise RuntimeError(
+                        "Google a refusé la redirection OAuth. "
+                        "Le client doit être de type Application de bureau, "
+                        "ou il faut autoriser exactement l'URI locale utilisée par l'app."
+                    ) from exc
+                raise
         self.token_path.parent.mkdir(parents=True, exist_ok=True)
         self.token_path.write_text(self._creds.to_json(), encoding="utf-8")
         return "Google connecté"

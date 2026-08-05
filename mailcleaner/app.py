@@ -448,6 +448,15 @@ class MailCleanerApp(QMainWindow):
         email_button.clicked.connect(self.choose_google_credentials)
         form.addWidget(email_button)
 
+        google_hint = QLabel(
+            "Important: le fichier credentials Google doit venir d'un client OAuth "
+            "de type Application de bureau. Si tu utilises un client Web, il faut "
+            "autoriser exactement l'URI locale de redirection."
+        )
+        google_hint.setWordWrap(True)
+        google_hint.setStyleSheet("color: #b0bac6; font-size: 12px;")
+        form.addWidget(google_hint)
+
         self.google_status = self._status_pill("Non connecté")
         form.addWidget(self.google_status)
         return box
