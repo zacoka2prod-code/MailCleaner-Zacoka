@@ -28,6 +28,28 @@ GOOGLE_SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 MICROSOFT_SCOPES = ["Mail.ReadWrite", "offline_access", "User.Read"]
 
 
+def describe_google_credentials(credentials_path: str | Path) -> dict[str, object]:
+    path = Path(credentials_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if "installed" in payload:
+        config = payload["installed"]
+        kind = "installed"
+    elif "web" in payload:
+        config = payload["web"]
+        kind = "web"
+    else:
+        raise ValueError(
+            "Le fichier credentials Google est invalide. "
+            "Il doit contenir une section 'installed' ou 'web'."
+        )
+    redirect_uris = [str(uri) for uri in config.get("redirect_uris", []) or []]
+    return {
+        "kind": kind,
+        "client_id": str(config.get("client_id", "")),
+        "redirect_uris": redirect_uris,
+    }
+
+
 def _decode_mime(value: str | None) -> str:
     if not value:
         return ""
@@ -95,15 +117,10 @@ class GmailProvider:
         self._creds: Credentials | None = None
 
     def _client_config(self) -> tuple[dict[str, object], str]:
+        description = describe_google_credentials(self.credentials_path)
+        kind = str(description["kind"])
         payload = json.loads(self.credentials_path.read_text(encoding="utf-8"))
-        if "installed" in payload:
-            return payload["installed"], "installed"
-        if "web" in payload:
-            return payload["web"], "web"
-        raise ValueError(
-            "Le fichier credentials Google est invalide. "
-            "Utilise un client OAuth de type Application de bureau si possible."
-        )
+        return payload[kind], kind
 
     def _redirect_target(self, client_config: dict[str, object], client_kind: str) -> tuple[str, int]:
         redirect_uris = [str(uri) for uri in client_config.get("redirect_uris", []) or []]
@@ -122,13 +139,15 @@ class GmailProvider:
             raise ValueError(
                 "Le client OAuth Google est de type Web et sa redirection locale ne contient pas de port. "
                 "Ajoute une URI autorisée comme http://localhost:8080/ dans Google Cloud Console, "
-                "ou recrée le client en type Application de bureau."
+                "ou recrée le client en type Application de bureau. "
+                f"URI trouvées: {', '.join(redirect_uris) or '(aucune)'}"
             )
 
         raise ValueError(
             "Le client OAuth Google est de type Web sans URI locale de type localhost. "
             "Recrée le client en Application de bureau, ou ajoute une redirection de type "
-            "http://localhost:8080/ puis réessaie."
+            "http://localhost:8080/ puis réessaie. "
+            f"URI trouvées: {', '.join(redirect_uris) or '(aucune)'}"
         )
 
     def authenticate(self) -> str:

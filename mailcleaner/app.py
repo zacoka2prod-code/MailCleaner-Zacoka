@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (
 
 from .config import APP_NAME, DATA_DIR, OVH_KEYRING_SERVICE, default_state, ensure_directories, load_state, save_state
 from .models import AppState, MailMessage, OvhAccount
-from .providers import GmailProvider, MicrosoftProvider, OvhProvider, build_providers
+from .providers import GmailProvider, MicrosoftProvider, OvhProvider, build_providers, describe_google_credentials
 
 
 class TaskRunner(QThread):
@@ -654,6 +654,23 @@ class MailCleanerApp(QMainWindow):
         if not Path(self.state.google_credentials_path).exists():
             QMessageBox.warning(self, APP_NAME, "Le fichier credentials Google est introuvable.")
             return
+        try:
+            description = describe_google_credentials(self.state.google_credentials_path)
+        except Exception as exc:
+            QMessageBox.warning(self, APP_NAME, str(exc))
+            return
+        if description["kind"] == "web":
+            redirect_uris = ", ".join(description["redirect_uris"]) or "(aucune)"
+            if not any(uri.startswith("http://localhost") or uri.startswith("http://127.0.0.1") for uri in description["redirect_uris"]):
+                QMessageBox.warning(
+                    self,
+                    APP_NAME,
+                    "Ce JSON Google est de type Web et ne contient pas de redirection locale.\n\n"
+                    f"URI trouvées:\n{redirect_uris}\n\n"
+                    "Pour cette app de bureau, crée plutôt un client OAuth de type Application de bureau "
+                    "ou ajoute une URI localhost comme http://localhost:8080/ dans Google Cloud Console.",
+                )
+                return
         self.state.message_limit = self.limit_spin.value()
         save_state(self.state)
 
